@@ -1,9 +1,9 @@
 from openpyxl import load_workbook
-import requests
+import requests, re
 
 data_file = 'data/URLs_without_files.xlsx'
 
-# Provide PDF host server with credentials (prevent 406 error)
+# Credential to prevnt 406 error
 headers = {
     'user-agent': 'Mozilla/5.0 (Macintosh; PPC Mac OS X 10_8_7 rv:5.0; en-US) AppleWebKit/533.31.5 (KHTML, like Gecko) Version/4.0 Safari/533.31.5',
 }
@@ -14,22 +14,42 @@ wb = load_workbook(data_file, data_only=True)
 # Load specific worksheet.
 ws = wb['0kbUrls']
 
-# Store URLs list
+# Store URLs
 urls = []
 
-# Append column 3 values to urls list
+# Filter values, add to list
 for row in ws:
     url = row[3].value
-    urls.append(url)
+    testList = ['https:', 'www.', '.pdf']
+    if any(testString in url for testString in testList):
+        urls.append(url)
 
-# name pdfs correctly
+print(urls)
+
 # save pdfs to folder
 # loop through urls
 
-# Download PDF
-downloadDoc = 'https://aipmanagement.dk/wp-content/uploads/2023/06/AIP_ESG-report_2022.pdf'
-r = requests.get(downloadDoc, allow_redirects=True, headers=headers)
+def getFilename_fromCd(cd, url):
+    """
+    #Get filename from content-disposition
+    """
+    if not cd:
+        if url.find('/'):
+            fname = url.rsplit('/', 1)[1]
+            return fname
+    fname = re.findall('filename=(.+)', cd)
+    if len(fname) == 0:
+         if url.find('/'):
+            fname = url.rsplit('/', 1)[1]
+            return fname
+    return fname[0]
 
-open('test_download1.pdf', 'wb').write(r.content)
-#open('test_download2.pdf', 'wb').close()
+# Download PDF
+##for url in urls:
+
+downloadUrl = "https://www.bancobpi.pt/contentservice/getContent?documentName=PR_UCMS02081560"
+r = requests.get(downloadUrl, allow_redirects=True, headers=headers)
+filename = getFilename_fromCd(r.headers.get('content-disposition'), downloadUrl)
+open(filename, 'wb').write(r.content)
+#open('test_download2.pdf', 'wb').close() """
 
