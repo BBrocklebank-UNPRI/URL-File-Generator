@@ -1,5 +1,6 @@
+import requests, re, os
 from openpyxl import load_workbook
-import requests, re
+from requests.exceptions import RequestException
 
 data_file = 'data/URLs_without_files.xlsx'
 
@@ -16,6 +17,7 @@ ws = wb['0kbUrls']
 
 # Store URLs
 urls = []
+UnamedCount = 0
 
 # Filter values, add to list
 for row in ws:
@@ -24,32 +26,44 @@ for row in ws:
     if any(testString in url for testString in testList):
         urls.append(url)
 
-print(urls)
-
-# save pdfs to folder
-# loop through urls
-
-def getFilename_fromCd(cd, url):
-    """
-    #Get filename from content-disposition
-    """
-    if not cd:
-        if url.find('/'):
-            fname = url.rsplit('/', 1)[1]
-            return fname
-    fname = re.findall('filename=(.+)', cd)
-    if len(fname) == 0:
-         if url.find('/'):
-            fname = url.rsplit('/', 1)[1]
-            return fname
-    return fname[0]
-
 # Download PDF
-##for url in urls:
 
-downloadUrl = "https://www.bancobpi.pt/contentservice/getContent?documentName=PR_UCMS02081560"
-r = requests.get(downloadUrl, allow_redirects=True, headers=headers)
-filename = getFilename_fromCd(r.headers.get('content-disposition'), downloadUrl)
-open(filename, 'wb').write(r.content)
-#open('test_download2.pdf', 'wb').close() """
+for url in urls:
+
+##url = 'https://www.bancobpi.pt/contentservice/getContent?documentName=PR_WCS01_UCM01169321'
+
+    if "https://" not in url :
+        url = f"https://{url}"
+
+    try:
+        with requests.get(url, allow_redirects=True, headers=headers) as r:
+           
+            fname = url.rsplit('/', 1)[1]
+
+            if len(fname) == 0:
+                UnamedCount + 1
+                fname = f"Unamed {UnamedCount}"
+            
+            if ".pdf" not in fname :
+                    fname = f"{fname}.html"
+                    print(f"Split: {fname}")
+                    #convert to PDF 
+            
+            invalid = '<>:"/\|?* '
+            for char in invalid:
+                fname = fname.replace(char, '')
+
+            if len(fname) > 256:
+                fname = fname[:250]
+
+            f = open(fname, 'wb')
+            f.write(r.content)
+            f.close
+
+
+    except RequestException as e:
+        print(e)
+
+# Loop through urls
+# Save webpage as pdf where no .pdf extension found
 
