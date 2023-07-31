@@ -1,6 +1,7 @@
-import requests, re, os
+import requests, re, os, convert
 from openpyxl import load_workbook
 from requests.exceptions import RequestException
+from convert import PdfGenerator
 
 # Define file to scan
 data_file = 'data/URLs_without_files.xlsx'
@@ -19,17 +20,22 @@ ws = wb['0kbUrls']
 # Store URLs
 urls = []
 
-# Filter values, add to list
-for row in ws:
-    url = row[3].value
-    testList = ['https:', 'www.', '.pdf', '.com', '.co.uk']
-    if any(testString in url for testString in testList):
+def fetchURLs ():
+    """
+    Filter values, add to list
+    """
+    for row in ws:
+        url = row[3].value
+        #testList = ['https:', 'www.', '.pdf', '.com', '.co.uk']
+        #if any(testString in url for testString in testList):
         urls.append(url)
-
+    downloadPdf()
 
 
 def nameFile (url):
-    """Validate file names using URL"""
+    """
+    Validate file names/Format
+    """
 
     fname = url.rsplit('/', 1)[1]
 
@@ -37,9 +43,10 @@ def nameFile (url):
         fname = url
 
     if ".pdf" not in fname :
-            fname = f"{fname}.html"
+            fname = f"{fname}.pdf"
             print(f"Split: {fname}")
-            #convert to PDF
+            #Convert to PDF
+            pdf_file = PdfGenerator([url]).main()
 
     invalid = '<>:"/\|?* '
     for char in invalid:
@@ -47,11 +54,18 @@ def nameFile (url):
 
     if len(fname) > 256:
         fname = fname[:250]
-    
-    return fname
 
-def download():
-    """Validate URLs/Download"""
+    if pdf_file : #check if pdf_file has value
+        return fname, pdf_file[0]
+    
+    else :
+        return fname
+
+
+def downloadPdf():
+    """
+    Validate URLs/Download PDFs
+    """
 
     for url in urls:
 
@@ -63,12 +77,17 @@ def download():
             
                 fname = nameFile(r.url)
 
-                f = open(fname, 'wb')
-                f.write(r.content)
-                f.close
+                if fname[1] :
+                    with open(fname[0], "wb") as outfile:
+                        outfile.write(fname[1].getbuffer())
+                
+                else :
+                    f = open(fname[0], 'wb')
+                    f.write(r.content)
+                    f.close
 
 
         except RequestException as e:
             print(e)
 
-download()
+fetchURLs()
