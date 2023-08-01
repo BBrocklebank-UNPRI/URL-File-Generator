@@ -12,12 +12,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 
 class PdfGenerator:
-    """
-     Simple use case:
-        pdf_file = PdfGenerator(['https://google.com']).main()
-        with open('new_pdf.pdf', "wb") as outfile:
-            outfile.write(pdf_file[0].getbuffer())
-    """
+    
     driver = None
     # https://chromedevtools.github.io/devtools-protocol/tot/Page#method-printToPDF
 
@@ -26,8 +21,8 @@ class PdfGenerator:
         'displayHeaderFooter': False,
         'printBackground': True,
         'preferCSSPageSize': True,
-        'paperWidth': 6.97,
-        'paperHeight': 16.5,
+        'paperWidth': 16,
+        'paperHeight': 16,
     }
 
     def __init__(self, urls: List[str]):
@@ -36,7 +31,7 @@ class PdfGenerator:
     def _get_pdf_from_url(self, url, *args, **kwargs):
         self.driver.get(url)
 
-        time.sleep(0.3)  # allow the page to load, increase if needed
+        time.sleep(1)  # allow the page to load, increase if needed
 
         print_options = self.print_options.copy()
         result = self._send_devtools(self.driver, "Page.printToPDF", print_options)
@@ -81,7 +76,9 @@ class PdfGenerator:
 
         return result
     
-#pdf_file = PdfGenerator(['https://medium.com']).main()
-# save pdf to file
-#with open('medium_site.pdf', "wb") as outfile:
-    #outfile.write(pdf_file[0].getbuffer())
+"""
+#Simple use case:
+pdf_file = PdfGenerator(['https://www.gresb.com/nl-en/']).main()
+with open('new_pdf.pdf', "wb") as outfile:
+    outfile.write(pdf_file[0].getbuffer())
+"""

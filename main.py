@@ -34,17 +34,21 @@ def fetchURLs ():
 
 def nameFile (url):
     """
-    Validate file names/Format
+    Validate file names/Format HTML
     """
+    pdf_file = []
 
+    print(f"First URL: {url}")
     fname = url.rsplit('/', 1)[1]
+    print(f"Split Name: {fname}")
 
     if len(fname) == 0:
         fname = url
+        print(f"Zero Name: {fname}")
 
-    if ".pdf" not in fname :
+    if ".pdf" not in url :
             fname = f"{fname}.pdf"
-            print(f"Split: {fname}")
+            #print(f"PDF Extension Added: {fname}")
             #Convert to PDF
             pdf_file = PdfGenerator([url]).main()
 
@@ -55,16 +59,16 @@ def nameFile (url):
     if len(fname) > 256:
         fname = fname[:250]
 
-    if pdf_file : #check if pdf_file has value
-        return fname, pdf_file[0]
+    if not pdf_file :
+        return fname, None
     
     else :
-        return fname
+        return fname, pdf_file[0]
 
 
 def downloadPdf():
     """
-    Validate URLs/Download PDFs
+    Loop through Urls/Save PDFs
     """
 
     for url in urls:
@@ -75,16 +79,19 @@ def downloadPdf():
         try:
             with requests.get(url, allow_redirects=True, headers=headers) as r:
             
-                fname = nameFile(r.url)
+                fname_PDF = nameFile(r.url)
+                print(f"fname_PDF:{fname_PDF}")
 
-                if fname[1] :
-                    with open(fname[0], "wb") as outfile:
-                        outfile.write(fname[1].getbuffer())
-                
-                else :
-                    f = open(fname[0], 'wb')
+                if fname_PDF[1] == None : #logic error, check for second value
+                    print(f"No converted PDF:{fname_PDF}")
+                    f = open(fname_PDF[0], 'wb')
                     f.write(r.content)
                     f.close
+                
+                else :
+                    print(f"Converted PDF present:{fname_PDF}")
+                    with open(fname_PDF[0], "wb") as outfile:
+                        outfile.write(fname_PDF[1].getbuffer())
 
 
         except RequestException as e:
