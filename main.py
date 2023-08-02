@@ -20,16 +20,18 @@ ws = wb['0kbUrls']
 # Store URLs
 urls = []
 
-def fetchURLs ():
+def fetchURLs (urls):
     """
-    Filter values, add to list
+    Loop Excel file, add to list
     """
     for row in ws:
         url = row[3].value
         #testList = ['https:', 'www.', '.pdf', '.com', '.co.uk']
         #if any(testString in url for testString in testList):
         urls.append(url)
-    downloadPdf()
+    urls = list( dict.fromkeys(urls) )
+    print(urls)
+    downloadPdf(urls)
 
 
 def nameFile (url):
@@ -66,7 +68,7 @@ def nameFile (url):
         return fname, pdf_file[0]
 
 
-def downloadPdf():
+def downloadPdf(urls):
     """
     Loop through Urls/Save PDFs
     """
@@ -97,4 +99,4 @@ def downloadPdf():
         except RequestException as e:
             print(e)
 
-fetchURLs()
+fetchURLs(urls)
