@@ -1,9 +1,10 @@
-import requests, re, os, convert, logging
+import requests, re, os, logging
 from openpyxl import load_workbook
 from requests.exceptions import RequestException
 from convert import PdfGenerator
+from urllib.parse import urljoin
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.WARNING, format='%(message)s')
 
 # Define Excel file to scan
 data_file = 'data/URLs_without_files.xlsx'
@@ -22,6 +23,7 @@ ws = wb['0kbUrls']
 # Store URLs
 urls = set()
 
+
 def fetchURLs (urls):
     """
     Loop Excel column, add to set
@@ -39,17 +41,8 @@ def nameFile (url):
     """
     Filter invalid filename characters
     """
-    #pdf_file = []
-
-    #fname = url.rsplit('/', 1)[1]
+    
     fname = url
-    #if len(fname) == 0:
-       #fname = url
-
-    #if ".pdf" not in url :
-            #fname = f"{fname}.pdf"
-            #Convert to PDF
-            #pdf_file = PdfGenerator([url]).main()
 
     invalid = '<>:"/\|?* '
     for char in invalid:
@@ -58,11 +51,6 @@ def nameFile (url):
     if len(fname) > 256:
         fname = fname[:250]
 
-    #if not pdf_file :
-        #return fname, None
-    
-    #else :
-        #return fname, pdf_file[0]
     return fname
 
 
@@ -71,31 +59,33 @@ def downloadPdf(urls):
     Loop URLs, check content type, save
     """
 
+    pdf_content_types = {'application/pdf'}
+    html_content_types = {'text/html'}
+
     for url in urls:
-        print(url)
-        if "https://" not in url :
-            url = f"https://{url}"
+
+        full_url = urljoin('https://', url)
 
         try:
-            with requests.get(url, allow_redirects=True, headers=headers) as r:
+            with requests.get(full_url, allow_redirects=True, headers=headers) as r:
                 contentType = r.headers.get('content-type')
-                print(contentType)
             
                 fname = nameFile(r.url)
 
-                if 'application/pdf' in contentType:
-                    f = open(f"{fname}.pdf", 'wb')
-                    f.write(r.content)
-                    f.close
+                if contentType in pdf_content_types:
+                    fname = f"{fname}.pdf"
+                    with open(fname, 'wb', buffering=8192) as f:
+                        f.write(r.content)
 
-                elif 'text/html' in contentType:
+                elif contentType in html_content_types:
                     pdf_file = PdfGenerator([url]).main()
-                    with open(f"{fname}.pdf", "wb") as outfile:
+                    fname = f"{fname}.pdf"
+                    with open(fname, "wb", buffering=8192) as outfile:
                         outfile.write(pdf_file[0].getbuffer())
 
-            logging.warning(f"Organisation Name: URL: {url} Result: Success")
+            logging.warning(f"Organisation Name: URL: {full_url} Result: Success")
 
-        except RequestException as e:
-            logging.warning(f" Organisation Name: URL: {url} Result: Failed")
+        except requests.exceptions.RequestException as e:
+            logging.warning(f" Organisation Name: URL: {full_url} Result: Failed")
 
 fetchURLs(urls)
